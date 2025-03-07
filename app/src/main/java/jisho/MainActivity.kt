@@ -1,4 +1,4 @@
-package words
+package jisho
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -58,7 +58,7 @@ class MainActivity : ComponentActivity() {
                             }
                         )
                         var results by remember { mutableStateOf<List<JishoData>>(emptyList()) }
-                        search(search, { searchResult ->
+                        search(search, 1, { searchResult ->
                             results = searchResult.data
                         })
                         LazyColumn {

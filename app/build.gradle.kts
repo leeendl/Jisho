@@ -5,15 +5,15 @@ plugins {
 }
 
 android {
-    namespace = "words"
+    namespace = "jisho"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "app.words"
+        applicationId = "app.jisho"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1"
+        versionCode = 2
+        versionName = "0.2"
 
         vectorDrawables {
             useSupportLibrary = true

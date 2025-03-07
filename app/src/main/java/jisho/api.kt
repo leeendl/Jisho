@@ -1,4 +1,4 @@
-package words
+package jisho
 
 import com.google.gson.annotations.SerializedName
 import kotlinx.coroutines.CoroutineScope
@@ -49,12 +49,14 @@ data class JishoSearch(
 interface JishoApi {
     @GET("api/v1/search/words")
     suspend fun keyword(
-        @Query("keyword") keyword: String
+        @Query("keyword") keyword: String,
+        @Query("page") page: Int
     ): JishoSearch
 }
 
 fun search(
-    query: String,
+    keyword: String,
+    page: Int,
     onSuccess: (JishoSearch) -> Unit,
     onFailure: (String) -> Unit = {}
 ) {
@@ -66,7 +68,7 @@ fun search(
 
     CoroutineScope(Dispatchers.IO).launch {
         runCatching {
-            jishoApi.keyword(query)
+            jishoApi.keyword(keyword, page)
         }.onSuccess { response ->
             withContext(Dispatchers.Main) { onSuccess(response) }
         }.onFailure { e ->

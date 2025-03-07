@@ -12,5 +12,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "words"
+rootProject.name = "jisho"
 include(":app")
