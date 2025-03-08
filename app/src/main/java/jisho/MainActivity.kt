@@ -85,7 +85,7 @@ class MainActivity : ComponentActivity() {
 
         fun modelSearch(query: String, page: Int = 1) {
             _search.value = query
-            if (query.isNotEmpty()) {
+            if (query.isNotEmpty() && query.length > 1) { // @todo overload issues. fix later.
                 _pending.value = true
                 viewModelScope.launch {
                     search(query, page, { word ->
