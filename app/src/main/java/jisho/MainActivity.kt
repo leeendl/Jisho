@@ -26,8 +26,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -95,13 +98,14 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     fun SearchBar(
-        searchQuery: String,
-        onSearchQueryChange: (String) -> Unit,
+        search: String,
+        onValueChange: (String) -> Unit,
         isLoading: Boolean
     ) {
+
         TextField(
-            value = searchQuery,
-            onValueChange = onSearchQueryChange,
+            value = search,
+            onValueChange = onValueChange,
             colors = TextFieldDefaults.colors(
                 unfocusedIndicatorColor = Color.Transparent,
                 focusedIndicatorColor = Color.Transparent
@@ -128,10 +132,33 @@ class MainActivity : ComponentActivity() {
                     text = word.japanese.firstOrNull()?.let { japanese ->
                         japanese.word ?: japanese.reading
                     }.orEmpty(),
-                    modifier = Modifier
-                        .fillMaxWidth(),
-                    textAlign = TextAlign.Start
+                    fontSize = 32.sp
                 )
+                Column(
+                    modifier = Modifier
+                        .padding(start = 90.dp)
+                ) {
+                    var i = 1
+                    for (sense in word.senses) {
+                        Text(
+                            text = buildAnnotatedString {
+                                withStyle(SpanStyle(color = Color.Gray, fontSize = 18.sp)) {
+                                    append("${sense.partsOfSpeech.firstOrNull().orEmpty()}\n")
+                                }
+                                withStyle(SpanStyle(color = Color.Gray, fontSize = 20.sp)) {
+                                    append("$i. ")
+                                }
+                                withStyle(SpanStyle(color = Color.White)) {
+                                    append(sense.englishDefinitions.firstOrNull().orEmpty())
+                                }
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth(),
+                            fontSize = 26.sp
+                        )
+                        i++
+                    }
+                }
             }
         }
     }
