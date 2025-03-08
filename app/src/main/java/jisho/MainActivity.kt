@@ -207,10 +207,10 @@ class MainActivity : ComponentActivity() {
                 for ((index, sense) in word.senses.withIndex()) {
                     Text(
                         text = buildAnnotatedString {
-                            withStyle(SpanStyle(color = Color(0xAAAAAAAA), fontSize = 16.sp)) {
+                            withStyle(SpanStyle(color = Color(0xFFAAAAAA), fontSize = 16.sp)) {
                                 append("${sense.partsOfSpeech.firstOrNull().orEmpty()}\n")
                             }
-                            withStyle(SpanStyle(color = Color(0x99999999), fontSize = 18.sp)) {
+                            withStyle(SpanStyle(color = Color(0xFF999999), fontSize = 18.sp)) {
                                 append("${index + 1}.  ")
                             }
                             withStyle(SpanStyle()) {
@@ -218,13 +218,13 @@ class MainActivity : ComponentActivity() {
                             }
                             // @todo redirect.
                             if (sense.seeAlso.isNotEmpty()) {
-                                withStyle(SpanStyle(color = Color(0xBBBBBBBB), fontSize = 16.sp)) {
+                                withStyle(SpanStyle(color = Color(0xFFBBBBBB), fontSize = 16.sp)) {
                                     append("  See also ${sense.seeAlso.firstOrNull().orEmpty()}")
                                     if (sense.info.isNotEmpty()) append(',')
                                 }
                             }
                             if (sense.info.isNotEmpty()) {
-                                withStyle(SpanStyle(color = Color(0xBBBBBBBB), fontSize = 16.sp)) {
+                                withStyle(SpanStyle(color = Color(0xFFBBBBBB), fontSize = 16.sp)) {
                                     append("  ${sense.info.firstOrNull().orEmpty()}")
                                 }
                             }
