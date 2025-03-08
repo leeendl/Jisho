@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -166,7 +167,6 @@ class MainActivity : ComponentActivity() {
                             )
                         }
                     }
-
                     if (word.jlpt.isNotEmpty()) {
                         Box(
                             modifier = Modifier
@@ -185,6 +185,24 @@ class MainActivity : ComponentActivity() {
                             )
                         }
                     }
+                    if (word.tags.isNotEmpty()) {
+                        Box(
+                            modifier = Modifier
+                                .background(
+                                    color = Color(0xFF909dc0),
+                                    shape = RoundedCornerShape(4.dp)
+                                )
+                                .padding(5.dp, 0.dp, 3.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = word.tags.firstOrNull().orEmpty(),
+                                color = Color(0xFF222222),
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
                 }
                 for ((index, sense) in word.senses.withIndex()) {
                     Text(
@@ -196,14 +214,28 @@ class MainActivity : ComponentActivity() {
                                 append("${index + 1}.  ")
                             }
                             withStyle(SpanStyle()) {
-                                append("${sense.englishDefinitions.firstOrNull().orEmpty()}\n")
+                                append(sense.englishDefinitions.firstOrNull().orEmpty())
                             }
+                            // @todo redirect.
+                            if (sense.seeAlso.isNotEmpty()) {
+                                withStyle(SpanStyle(color = Color(0xBBBBBBBB), fontSize = 16.sp)) {
+                                    append("  See also ${sense.seeAlso.firstOrNull().orEmpty()}")
+                                    if (sense.info.isNotEmpty()) append(',')
+                                }
+                            }
+                            if (sense.info.isNotEmpty()) {
+                                withStyle(SpanStyle(color = Color(0xBBBBBBBB), fontSize = 16.sp)) {
+                                    append("  ${sense.info.firstOrNull().orEmpty()}")
+                                }
+                            }
+                            append('\n')
                         },
                         modifier = Modifier
                             .fillMaxWidth(),
                         fontSize = 20.sp
                     )
                 }
+                HorizontalDivider()
             }
         }
     }
