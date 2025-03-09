@@ -46,8 +46,8 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.launch
 import jisho.ui.theme.Theme
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -57,20 +57,20 @@ class MainActivity : ComponentActivity() {
         setContent {
             Theme {
                 Surface {
-                    val search by viewModel.search.observeAsState("")
-                    val results by viewModel.results.observeAsState(emptyList())
-                    val pending by viewModel.pending.observeAsState(false)
                     Column(
                         Modifier
                             .fillMaxSize()
                             .padding(WindowInsets.systemBars.asPaddingValues()), // @note on screen camera
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
+                        val search by viewModel.search.observeAsState("")
+                        val pending by viewModel.pending.observeAsState(false)
                         SearchBar(
                             search,
                             { viewModel.modelSearch(it) },
                             pending
                         )
+                        val results by viewModel.results.observeAsState(emptyList())
                         Results(results, viewModel::modelSearch)
                     }
                 }
@@ -90,7 +90,7 @@ class MainActivity : ComponentActivity() {
 
         fun modelSearch(query: String, page: Int = 1) {
             _search.value = query
-            if (query.isNotEmpty() && query.length > 1) { // @todo overload issues. fix later.
+            if (query.isNotEmpty()) {
                 _pending.value = true
                 viewModelScope.launch {
                     search(query, page, { word ->

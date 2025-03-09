@@ -12,8 +12,8 @@ android {
         applicationId = "app.jisho"
         minSdk = 26
         targetSdk = 35
-        versionCode = 11
-        versionName = "1.0 (11-rc)"
+        versionCode = 12
+        versionName = "1.0 (12-rc)"
 
         vectorDrawables {
             useSupportLibrary = true
@@ -57,7 +57,7 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.material3)
     implementation(libs.retrofit)
-    implementation(libs.converter.gson)
-    implementation(libs.gson)
     implementation(libs.androidx.runtime.livedata)
+    implementation(libs.converter.moshi)
+    implementation(libs.moshi.kotlin)
 }

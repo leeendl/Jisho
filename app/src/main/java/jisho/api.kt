@@ -1,49 +1,53 @@
 package jisho
 
-import com.google.gson.annotations.SerializedName
+import com.squareup.moshi.Json
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
 import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
+import retrofit2.converter.moshi.MoshiConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Query
+import java.util.concurrent.TimeUnit
 
 data class JishoData(
-    @SerializedName("slug") val slug: String = "",
-    @SerializedName("is_common") val isCommon: Boolean = false,
-    @SerializedName("tags") val tags: List<String> = emptyList(),
-    @SerializedName("jlpt") val jlpt: List<String> = emptyList(),
-    @SerializedName("japanese") val japanese: List<JishoJapanese> = emptyList(),
-    @SerializedName("senses") val senses: List<JishoSenses> = emptyList()
+    @Json(name = "slug") val slug: String = "",
+    @Json(name = "is_common") val isCommon: Boolean = false,
+    @Json(name = "tags") val tags: List<String> = emptyList(),
+    @Json(name = "jlpt") val jlpt: List<String> = emptyList(),
+    @Json(name = "japanese") val japanese: List<JishoJapanese> = emptyList(),
+    @Json(name = "senses") val senses: List<JishoSenses> = emptyList()
 )
 
 /**
  * "japanese":
  **/
 data class JishoJapanese(
-    @SerializedName("word") val word: String? = null, // for kana-cases
-    @SerializedName("reading") val reading: String = ""
+    @Json(name = "word") val word: String? = null, // for kana-cases
+    @Json(name = "reading") val reading: String = ""
 )
 
 /**
  * "senses":
  **/
 data class JishoSenses(
-    @SerializedName("english_definitions") val englishDefinitions: List<String> = emptyList(),
-    @SerializedName("parts_of_speech") val partsOfSpeech: List<String> = emptyList(),
+    @Json(name = "english_definitions") val englishDefinitions: List<String> = emptyList(),
+    @Json(name = "parts_of_speech") val partsOfSpeech: List<String> = emptyList(),
     // @todo links
-    @SerializedName("tags") val tags: List<String> = emptyList(),
+    @Json(name = "tags") val tags: List<String> = emptyList(),
     // @todo restrictions
-    @SerializedName("see_also") val seeAlso: List<String> = emptyList(),
+    @Json(name = "see_also") val seeAlso: List<String> = emptyList(),
     // @todo antonyms
     // @todo source
-    @SerializedName("info") val info: List<String> = emptyList()
+    @Json(name = "info") val info: List<String> = emptyList()
 )
 
 data class JishoSearch(
-    @SerializedName("data") val data: List<JishoData> = emptyList()
+    @Json(name = "data") val data: List<JishoData> = emptyList()
 )
 
 interface JishoApi {
@@ -60,11 +64,22 @@ fun search(
     onSuccess: (JishoSearch) -> Unit,
     onFailure: (String) -> Unit = {}
 ) {
-    val retrofit = Retrofit.Builder()
+    val jishoApi = Retrofit.Builder()
         .baseUrl("https://jisho.org/")
-        .addConverterFactory(GsonConverterFactory.create())
+        .client(
+            OkHttpClient.Builder()
+                .readTimeout(24000, TimeUnit.MILLISECONDS)
+                .build()
+        )
+        .addConverterFactory(
+            MoshiConverterFactory.create(
+                Moshi.Builder()
+                    .add(KotlinJsonAdapterFactory())
+                    .build()
+            )
+        )
         .build()
-    val jishoApi = retrofit.create(JishoApi::class.java)
+        .create(JishoApi::class.java)
 
     CoroutineScope(Dispatchers.IO).launch {
         runCatching {
