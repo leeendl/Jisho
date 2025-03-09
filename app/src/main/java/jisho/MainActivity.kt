@@ -216,29 +216,25 @@ class MainActivity : ComponentActivity() {
                         withStyle(SpanStyle(color = Color(0xFF999999), fontSize = 18.sp)) {
                             append("${index + 1}.  ")
                         }
-                        append(sense.englishDefinitions.firstOrNull().orEmpty())
-                        if (sense.seeAlso.isNotEmpty()) {
-                            withStyle(SpanStyle(color = Color(0xFFBBBBBB), fontSize = 16.sp)) {
-                                append("  See also ")
-                            }
-                            pushStringAnnotation(
-                                tag = "seeAlso",
-                                annotation = sense.seeAlso.firstOrNull().orEmpty()
-                            )
-                            withStyle(
-                                SpanStyle(
-                                    color = Color(0xFFBBBBBB),
-                                    fontSize = 16.sp,
-                                    textDecoration = TextDecoration.Underline
-                                )
-                            ) {
-                                append(sense.seeAlso.firstOrNull().orEmpty())
-                            }
-                            pop()
+                        sense.englishDefinitions.forEachIndexed { index, definition ->
+                            append(definition)
+                            if (index != sense.englishDefinitions.lastIndex) append("; ")
                         }
-                        if (sense.info.isNotEmpty()) {
-                            withStyle(SpanStyle(color = Color(0xFFBBBBBB), fontSize = 16.sp)) {
-                                append(",  ${sense.info.firstOrNull().orEmpty()}")
+                        withStyle(SpanStyle(color = Color(0xFFBBBBBB), fontSize = 16.sp)) {
+                            if (sense.seeAlso.isNotEmpty()) {
+                                append("  See also ")
+                                pushStringAnnotation(
+                                    tag = "seeAlso",
+                                    annotation = sense.seeAlso.firstOrNull().orEmpty()
+                                )
+                                withStyle(SpanStyle(textDecoration = TextDecoration.Underline)) {
+                                    append(sense.seeAlso.firstOrNull().orEmpty())
+                                }
+                                pop()
+                            }
+                            if (sense.info.isNotEmpty()) {
+                                if (sense.seeAlso.isNotEmpty()) append(',')
+                                append("  ${sense.info.firstOrNull().orEmpty()}")
                             }
                         }
                         append('\n')
