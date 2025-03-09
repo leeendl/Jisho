@@ -35,9 +35,11 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
@@ -65,13 +67,15 @@ class MainActivity : ComponentActivity() {
                     ) {
                         val search by viewModel.search.observeAsState("")
                         val pending by viewModel.pending.observeAsState(false)
+                        val iPos by viewModel.iPos.observeAsState(0)
                         SearchBar(
                             search,
                             { viewModel.modelSearch(it) },
-                            pending
+                            pending,
+                            iPos
                         )
                         val results by viewModel.results.observeAsState(emptyList())
-                        Results(results, viewModel::modelSearch)
+                        Results(results, viewModel)
                     }
                 }
             }
@@ -88,8 +92,11 @@ class MainActivity : ComponentActivity() {
         private val _pending = MutableLiveData(false)
         val pending: LiveData<Boolean> get() = _pending
 
+        val iPos = MutableLiveData(0)
+
         fun modelSearch(query: String, page: Int = 1) {
             _search.value = query
+            iPos.value = query.length
             if (query.isNotEmpty()) {
                 _pending.value = true
                 viewModelScope.launch {
@@ -111,11 +118,14 @@ class MainActivity : ComponentActivity() {
     fun SearchBar(
         search: String,
         onValueChange: (String) -> Unit,
-        isLoading: Boolean
+        isLoading: Boolean,
+        iPos: Int
     ) {
         TextField(
-            value = search,
-            onValueChange = onValueChange,
+            value = TextFieldValue(text = search, selection = TextRange(iPos)),
+            onValueChange = { newValue ->
+                onValueChange(newValue.text)
+            },
             colors = TextFieldDefaults.colors(
                 unfocusedIndicatorColor = Color.Transparent,
                 focusedIndicatorColor = Color.Transparent
@@ -135,7 +145,7 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    fun Results(results: List<JishoData>, searchModel: (String) -> Unit) {
+    fun Results(results: List<JishoData>, searchModel: Model) {
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -252,7 +262,10 @@ class MainActivity : ComponentActivity() {
                                             layoutResult.getOffsetForPosition(offset),
                                             layoutResult.getOffsetForPosition(offset)
                                         ).firstOrNull()
-                                            ?.let { annotation -> searchModel(annotation.item) }
+                                            ?.let { annotation ->
+                                                searchModel.modelSearch(annotation.item)
+                                                searchModel.iPos.value = annotation.item.length
+                                            }
                                     }
                                 }
                             },
