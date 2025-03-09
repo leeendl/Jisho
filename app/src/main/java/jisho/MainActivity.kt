@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,7 +12,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
@@ -31,10 +31,14 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -67,7 +71,7 @@ class MainActivity : ComponentActivity() {
                             { viewModel.modelSearch(it) },
                             pending
                         )
-                        Results(results)
+                        Results(results, viewModel::modelSearch)
                     }
                 }
             }
@@ -131,7 +135,7 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    fun Results(results: List<JishoData>) {
+    fun Results(results: List<JishoData>, searchModel: (String) -> Unit) {
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -205,34 +209,60 @@ class MainActivity : ComponentActivity() {
                     }
                 }
                 for ((index, sense) in word.senses.withIndex()) {
+                    val annotatedString = buildAnnotatedString {
+                        withStyle(SpanStyle(color = Color(0xFFAAAAAA), fontSize = 16.sp)) {
+                            append("${sense.partsOfSpeech.firstOrNull().orEmpty()}\n")
+                        }
+                        withStyle(SpanStyle(color = Color(0xFF999999), fontSize = 18.sp)) {
+                            append("${index + 1}.  ")
+                        }
+                        append(sense.englishDefinitions.firstOrNull().orEmpty())
+                        if (sense.seeAlso.isNotEmpty()) {
+                            withStyle(SpanStyle(color = Color(0xFFBBBBBB), fontSize = 16.sp)) {
+                                append("  See also ")
+                            }
+                            pushStringAnnotation(
+                                tag = "seeAlso",
+                                annotation = sense.seeAlso.firstOrNull().orEmpty()
+                            )
+                            withStyle(
+                                SpanStyle(
+                                    color = Color(0xFFBBBBBB),
+                                    fontSize = 16.sp,
+                                    textDecoration = TextDecoration.Underline
+                                )
+                            ) {
+                                append(sense.seeAlso.firstOrNull().orEmpty())
+                            }
+                            pop()
+                            if (sense.info.isNotEmpty()) append(',')
+                        }
+                        if (sense.info.isNotEmpty()) {
+                            withStyle(SpanStyle(color = Color(0xFFBBBBBB), fontSize = 16.sp)) {
+                                append("  ${sense.info.firstOrNull().orEmpty()}")
+                            }
+                        }
+                        append('\n')
+                    }
+                    var textLayoutResult: TextLayoutResult? = null
                     Text(
-                        text = buildAnnotatedString {
-                            withStyle(SpanStyle(color = Color(0xFFAAAAAA), fontSize = 16.sp)) {
-                                append("${sense.partsOfSpeech.firstOrNull().orEmpty()}\n")
-                            }
-                            withStyle(SpanStyle(color = Color(0xFF999999), fontSize = 18.sp)) {
-                                append("${index + 1}.  ")
-                            }
-                            withStyle(SpanStyle()) {
-                                append(sense.englishDefinitions.firstOrNull().orEmpty())
-                            }
-                            // @todo redirect.
-                            if (sense.seeAlso.isNotEmpty()) {
-                                withStyle(SpanStyle(color = Color(0xFFBBBBBB), fontSize = 16.sp)) {
-                                    append("  See also ${sense.seeAlso.firstOrNull().orEmpty()}")
-                                    if (sense.info.isNotEmpty()) append(',')
-                                }
-                            }
-                            if (sense.info.isNotEmpty()) {
-                                withStyle(SpanStyle(color = Color(0xFFBBBBBB), fontSize = 16.sp)) {
-                                    append("  ${sense.info.firstOrNull().orEmpty()}")
-                                }
-                            }
-                            append('\n')
-                        },
+                        text = annotatedString,
                         modifier = Modifier
-                            .fillMaxWidth(),
-                        fontSize = 20.sp
+                            .pointerInput(annotatedString) {
+                                detectTapGestures { offset ->
+                                    val layoutResult = textLayoutResult
+                                    if (layoutResult != null) {
+                                        annotatedString.getStringAnnotations(
+                                            "seeAlso",
+                                            layoutResult.getOffsetForPosition(offset),
+                                            layoutResult.getOffsetForPosition(offset)
+                                        ).firstOrNull()
+                                            ?.let { annotation -> searchModel(annotation.item) }
+                                    }
+                                }
+                            },
+                        onTextLayout = { textLayoutResult = it },
+                        style = TextStyle(fontSize = 20.sp)
                     )
                 }
                 HorizontalDivider()
