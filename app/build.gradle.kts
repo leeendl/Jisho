@@ -12,8 +12,8 @@ android {
         applicationId = "app.jisho"
         minSdk = 26
         targetSdk = 35
-        versionCode = 10
-        versionName = "1.0 (10-rc)"
+        versionCode = 11
+        versionName = "1.0 (11-rc)"
 
         vectorDrawables {
             useSupportLibrary = true

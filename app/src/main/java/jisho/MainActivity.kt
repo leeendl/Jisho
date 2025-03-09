@@ -235,11 +235,10 @@ class MainActivity : ComponentActivity() {
                                 append(sense.seeAlso.firstOrNull().orEmpty())
                             }
                             pop()
-                            if (sense.info.isNotEmpty()) append(',')
                         }
                         if (sense.info.isNotEmpty()) {
                             withStyle(SpanStyle(color = Color(0xFFBBBBBB), fontSize = 16.sp)) {
-                                append("  ${sense.info.firstOrNull().orEmpty()}")
+                                append(",  ${sense.info.firstOrNull().orEmpty()}")
                             }
                         }
                         append('\n')
