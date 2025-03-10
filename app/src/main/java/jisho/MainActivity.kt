@@ -75,7 +75,7 @@ class MainActivity : ComponentActivity() {
                             iPos
                         )
                         val results by viewModel.results.observeAsState(emptyList())
-                        Results(results, viewModel)
+                        if (results.isNotEmpty()) Results(results, viewModel)
                     }
                 }
             }
@@ -100,12 +100,17 @@ class MainActivity : ComponentActivity() {
             if (query.isNotEmpty()) {
                 _pending.value = true
                 viewModelScope.launch {
+                    val thisQuery = _search.value
                     search(query, page, { word ->
-                        _results.postValue(word.data)
-                        _pending.postValue(false)
+                        if (thisQuery == _search.value) {
+                            _results.postValue(word.data)
+                            _pending.postValue(false)
+                        }
                     }, {
-                        // @todo further support dealing with API errors.
-                        _pending.postValue(false)
+                        // @todo further support dealing with API errors
+                        if (thisQuery == _search.value) {
+                            _pending.postValue(false)
+                        }
                     })
                 }
             } else {
@@ -146,6 +151,18 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     fun Results(results: List<JishoData>, searchModel: Model) {
+        if (searchModel.search.value.isNullOrEmpty()) return
+        val search = searchModel.search.value.toString()
+        if (search.all { it in 'a'..'z' || it in 'A'..'Z' } &&
+            search.canEtoH()) {
+            Text(
+                text = "Searched for ${
+                    replaceEtoH(search)
+                }. You can also try a search for \"${search}\".", // @todo add clickable
+                fontSize = 18.sp,
+                modifier = Modifier.padding(8.dp)
+            )
+        }
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
