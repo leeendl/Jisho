@@ -31,8 +31,10 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextRange
@@ -120,7 +122,7 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    fun SearchBar(
+    private fun SearchBar(
         search: String,
         onValueChange: (String) -> Unit,
         isLoading: Boolean,
@@ -155,12 +157,26 @@ class MainActivity : ComponentActivity() {
         val search = searchModel.search.value.toString()
         if (search.all { it in 'a'..'z' || it in 'A'..'Z' } &&
             search.canEtoH()) {
+            val annotatedString = buildAnnotatedString {
+                append("Searched for ${replaceEtoH(search)}. You can also try a search for ")
+                pushStringAnnotation(
+                    tag = "clickSearch",
+                    annotation = "\"$search\""
+                )
+                withStyle(SpanStyle(textDecoration = TextDecoration.Underline)) {
+                    append("\"$search\"")
+                }
+                pop()
+                append(".")
+            }
+            var textLayoutResult: TextLayoutResult? = null
             Text(
-                text = "Searched for ${
-                    replaceEtoH(search)
-                }. You can also try a search for \"${search}\".", // @todo add clickable
-                fontSize = 18.sp,
-                modifier = Modifier.padding(8.dp)
+                text = annotatedString,
+                modifier = Modifier
+                    .pointerInput(annotatedString) {
+                        tapGesture(searchModel, annotatedString, textLayoutResult)
+                    },
+                onTextLayout = { textLayoutResult = it }
             )
         }
         LazyColumn(
@@ -169,70 +185,32 @@ class MainActivity : ComponentActivity() {
                 .padding(8.dp)
         ) {
             items(results) { word ->
-                Row {
+                Column {
+                    Text(
+                        text = word.japanese.firstOrNull()?.let { japanese ->
+                            if (japanese.word != null) japanese.reading else ""
+                        }.orEmpty(),
+                        fontSize = 16.sp
+                    )
                     Text(
                         text = word.japanese.firstOrNull()?.let { japanese ->
                             japanese.word ?: japanese.reading
                         }.orEmpty(),
                         fontSize = 32.sp
                     )
+
                 }
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     if (word.isCommon) {
-                        Box(
-                            modifier = Modifier
-                                .background(
-                                    color = Color(0xFF8abc83),
-                                    shape = RoundedCornerShape(4.dp)
-                                )
-                                .padding(5.dp, 0.dp, 3.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "common word",
-                                color = Color(0xFF222222),
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
+                        wordTag("common word", Color(0xFF8abc83))
                     }
                     if (word.jlpt.isNotEmpty()) {
-                        Box(
-                            modifier = Modifier
-                                .background(
-                                    color = Color(0xFF909dc0),
-                                    shape = RoundedCornerShape(4.dp)
-                                )
-                                .padding(5.dp, 0.dp, 3.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = word.jlpt.firstOrNull().orEmpty(),
-                                color = Color(0xFF222222),
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
+                        wordTag(word.jlpt.firstOrNull().orEmpty(), Color(0xFF909dc0))
                     }
                     if (word.tags.isNotEmpty()) {
-                        Box(
-                            modifier = Modifier
-                                .background(
-                                    color = Color(0xFF909dc0),
-                                    shape = RoundedCornerShape(4.dp)
-                                )
-                                .padding(5.dp, 0.dp, 3.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = word.tags.firstOrNull().orEmpty(),
-                                color = Color(0xFF222222),
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
+                        wordTag(word.tags.firstOrNull().orEmpty(), Color(0xFF909dc0))
                     }
                 }
                 for ((index, sense) in word.senses.withIndex()) {
@@ -251,7 +229,7 @@ class MainActivity : ComponentActivity() {
                             if (sense.seeAlso.isNotEmpty()) {
                                 append("  See also ")
                                 pushStringAnnotation(
-                                    tag = "seeAlso",
+                                    tag = "clickSearch",
                                     annotation = sense.seeAlso.firstOrNull().orEmpty()
                                 )
                                 withStyle(SpanStyle(textDecoration = TextDecoration.Underline)) {
@@ -271,26 +249,56 @@ class MainActivity : ComponentActivity() {
                         text = annotatedString,
                         modifier = Modifier
                             .pointerInput(annotatedString) {
-                                detectTapGestures { offset ->
-                                    val layoutResult = textLayoutResult
-                                    if (layoutResult != null) {
-                                        annotatedString.getStringAnnotations(
-                                            "seeAlso",
-                                            layoutResult.getOffsetForPosition(offset),
-                                            layoutResult.getOffsetForPosition(offset)
-                                        ).firstOrNull()
-                                            ?.let { annotation ->
-                                                searchModel.modelSearch(annotation.item)
-                                                searchModel.iPos.value = annotation.item.length
-                                            }
-                                    }
-                                }
+                                tapGesture(searchModel, annotatedString, textLayoutResult)
                             },
                         onTextLayout = { textLayoutResult = it },
                         style = TextStyle(fontSize = 20.sp)
                     )
                 }
                 HorizontalDivider()
+            }
+        }
+    }
+
+    @Composable
+    private fun wordTag(
+        label: String,
+        backgroundColor: Color
+    ) {
+        Box(
+            modifier = Modifier
+                .background(
+                    color = backgroundColor,
+                    shape = RoundedCornerShape(4.dp)
+                )
+                .padding(5.dp, 0.dp, 3.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = label,
+                color = Color(0xFF222222),
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+    }
+
+    private suspend fun PointerInputScope.tapGesture(
+        searchModel: Model,
+        annotatedString: AnnotatedString,
+        textLayoutResult: TextLayoutResult?
+    ) {
+        this.detectTapGestures { offset ->
+            textLayoutResult?.let { layoutResult ->
+                val offsetPosition = layoutResult.getOffsetForPosition(offset)
+                annotatedString.getStringAnnotations(
+                    "clickSearch",
+                    offsetPosition,
+                    offsetPosition
+                ).firstOrNull()?.let { annotation ->
+                    searchModel.modelSearch(annotation.item)
+                    searchModel.iPos.value = annotation.item.length
+                }
             }
         }
     }
