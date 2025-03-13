@@ -3,9 +3,7 @@ package jisho
 import com.squareup.moshi.Json
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
@@ -58,36 +56,37 @@ interface JishoApi {
     ): JishoSearch
 }
 
-fun search(
+object jishoClient {
+    private val moshi = Moshi.Builder()
+        .add(KotlinJsonAdapterFactory())
+        .build()
+
+    private val okHttpClient = OkHttpClient.Builder()
+        .readTimeout(24000, TimeUnit.MILLISECONDS)
+        .build()
+
+    private val retrofit = Retrofit.Builder()
+        .baseUrl("https://jisho.org/")
+        .client(okHttpClient)
+        .addConverterFactory(MoshiConverterFactory.create(moshi))
+        .build()
+
+    val jishoApi: JishoApi by lazy { retrofit.create(JishoApi::class.java) }
+}
+
+suspend fun search(
     keyword: String,
     page: Int,
     onSuccess: (JishoSearch) -> Unit,
     onFailure: (String) -> Unit = {}
 ) {
-    val jishoApi = Retrofit.Builder()
-        .baseUrl("https://jisho.org/")
-        .client(
-            OkHttpClient.Builder()
-                .readTimeout(24000, TimeUnit.MILLISECONDS)
-                .build()
-        )
-        .addConverterFactory(
-            MoshiConverterFactory.create(
-                Moshi.Builder()
-                    .add(KotlinJsonAdapterFactory())
-                    .build()
-            )
-        )
-        .build()
-        .create(JishoApi::class.java)
-
-    CoroutineScope(Dispatchers.IO).launch {
+    withContext(Dispatchers.IO) {
         runCatching {
-            jishoApi.keyword(keyword, page)
+            jishoClient.jishoApi.keyword(keyword, page)
         }.onSuccess { response ->
-            withContext(Dispatchers.Main) { onSuccess(response) }
+            onSuccess(response)
         }.onFailure { e ->
-            withContext(Dispatchers.Main) { onFailure(e.message ?: "Unknown error") }
+            onFailure(e.message ?: "Unknown error")
         }
     }
 }
