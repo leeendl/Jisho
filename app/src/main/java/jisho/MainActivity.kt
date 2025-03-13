@@ -26,8 +26,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -46,11 +46,11 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import jisho.ui.theme.Theme
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -67,16 +67,16 @@ class MainActivity : ComponentActivity() {
                             .padding(WindowInsets.systemBars.asPaddingValues()), // @note on screen camera
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        val search by viewModel.search.observeAsState("")
-                        val pending by viewModel.pending.observeAsState(false)
-                        val iPos by viewModel.iPos.observeAsState(0)
+                        val search by viewModel.search.collectAsState("")
+                        val pending by viewModel.pending.collectAsState(false)
+                        val iPos by viewModel.iPos.collectAsState(0)
                         SearchBar(
                             search,
                             { viewModel.modelSearch(it) },
                             pending,
                             iPos
                         )
-                        val results by viewModel.results.observeAsState(emptyList())
+                        val results by viewModel.results.collectAsState(emptyList())
                         if (results.isNotEmpty()) Results(results, viewModel)
                     }
                 }
@@ -85,16 +85,16 @@ class MainActivity : ComponentActivity() {
     }
 
     class Model : ViewModel() {
-        private val _search = MutableLiveData("")
-        val search: LiveData<String> get() = _search
+        private val _search = MutableStateFlow("")
+        val search: StateFlow<String> get() = _search
 
-        private val _results = MutableLiveData<List<JishoData>>()
-        val results: LiveData<List<JishoData>> get() = _results
+        private val _results = MutableStateFlow<List<JishoData>>(emptyList())
+        val results: StateFlow<List<JishoData>> get() = _results
 
-        private val _pending = MutableLiveData(false)
-        val pending: LiveData<Boolean> get() = _pending
+        private val _pending = MutableStateFlow(false)
+        val pending: StateFlow<Boolean> get() = _pending
 
-        val iPos = MutableLiveData(0)
+        val iPos = MutableStateFlow(0)
 
         fun modelSearch(query: String, page: Int = 1) {
             _search.value = query
@@ -105,18 +105,17 @@ class MainActivity : ComponentActivity() {
                     val thisQuery = _search.value
                     search(query, page, { word ->
                         if (thisQuery == _search.value) {
-                            _results.postValue(word.data)
-                            _pending.postValue(false)
+                            _results.value = word.data
+                            _pending.value = false
                         }
                     }, {
-                        // @todo further support dealing with API errors
                         if (thisQuery == _search.value) {
-                            _pending.postValue(false)
+                            _pending.value = false
                         }
                     })
                 }
             } else {
-                _results.postValue(emptyList())
+                _results.value = emptyList()
             }
         }
     }
@@ -153,8 +152,8 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     fun Results(results: List<JishoData>, searchModel: Model) {
-        if (searchModel.search.value.isNullOrEmpty()) return
-        val search = searchModel.search.value.toString()
+        val search by searchModel.search.collectAsState()
+        if (search.isEmpty()) return
         if (search.all { it in 'a'..'z' || it in 'A'..'Z' } &&
             search.canEtoH()) {
             val annotatedString = buildAnnotatedString {
@@ -271,8 +270,7 @@ class MainActivity : ComponentActivity() {
                     color = backgroundColor,
                     shape = RoundedCornerShape(4.dp)
                 )
-                .padding(5.dp, 0.dp, 3.dp),
-            contentAlignment = Alignment.Center
+                .padding(start = 5.dp, end = 3.dp)
         ) {
             Text(
                 text = label,
