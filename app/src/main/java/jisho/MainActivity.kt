@@ -67,15 +67,9 @@ class MainActivity : ComponentActivity() {
                             .padding(WindowInsets.systemBars.asPaddingValues()), // @note on screen camera
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        val search by viewModel.search.collectAsState("")
-                        val pending by viewModel.pending.collectAsState(false)
-                        val iPos by viewModel.iPos.collectAsState(0)
                         SearchBar(
-                            search,
-                            { viewModel.modelSearch(it) },
-                            pending,
-                            iPos
-                        )
+                            viewModel
+                        ) { viewModel.modelSearch(it) }
                         val results by viewModel.results.collectAsState(emptyList())
                         if (results.isNotEmpty()) Results(results, viewModel)
                     }
@@ -122,11 +116,12 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     private fun SearchBar(
-        search: String,
-        onValueChange: (String) -> Unit,
-        isLoading: Boolean,
-        iPos: Int
+        viewModel: Model,
+        onValueChange: (String) -> Unit
     ) {
+        val search by viewModel.search.collectAsState("")
+        val pending by viewModel.pending.collectAsState(false)
+        val iPos by viewModel.iPos.collectAsState(0)
         TextField(
             value = TextFieldValue(text = search, selection = TextRange(iPos)),
             onValueChange = { newValue ->
@@ -143,7 +138,7 @@ class MainActivity : ComponentActivity() {
                 )
             },
             trailingIcon = {
-                if (isLoading) {
+                if (pending) {
                     CircularProgressIndicator(Modifier.size(20.dp))
                 }
             }
@@ -151,8 +146,8 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    fun Results(results: List<JishoData>, searchModel: Model) {
-        val search by searchModel.search.collectAsState()
+    fun Results(results: List<JishoData>, viewModel: Model) {
+        val search by viewModel.search.collectAsState()
         if (search.isEmpty()) return
         if (search.all { it in 'a'..'z' || it in 'A'..'Z' } &&
             search.canEtoH()) {
@@ -173,7 +168,7 @@ class MainActivity : ComponentActivity() {
                 text = annotatedString,
                 modifier = Modifier
                     .pointerInput(annotatedString) {
-                        tapGesture(searchModel, annotatedString, textLayoutResult)
+                        tapGesture(viewModel, annotatedString, textLayoutResult)
                     },
                 onTextLayout = { textLayoutResult = it }
             )
@@ -248,7 +243,7 @@ class MainActivity : ComponentActivity() {
                         text = annotatedString,
                         modifier = Modifier
                             .pointerInput(annotatedString) {
-                                tapGesture(searchModel, annotatedString, textLayoutResult)
+                                tapGesture(viewModel, annotatedString, textLayoutResult)
                             },
                         onTextLayout = { textLayoutResult = it },
                         style = TextStyle(fontSize = 20.sp)
