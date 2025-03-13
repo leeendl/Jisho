@@ -12,12 +12,9 @@ android {
         applicationId = "app.jisho"
         minSdk = 26
         targetSdk = 35
-        versionCode = 21
-        versionName = "1.0-21"
+        versionCode = 23
+        versionName = "1.0-23"
 
-        vectorDrawables {
-            useSupportLibrary = true
-        }
     }
 
     buildTypes {
@@ -37,10 +34,7 @@ android {
         jvmTarget = "1.8"
     }
     buildFeatures {
-        compose = true
-    }
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.15"
+
     }
     packaging {
         resources {
@@ -54,7 +48,6 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)
-    implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.material3)
     implementation(libs.retrofit)
     implementation(libs.androidx.runtime.livedata)
