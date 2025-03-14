@@ -56,7 +56,7 @@ interface JishoApi {
     ): JishoSearch
 }
 
-object jishoClient {
+object JishoClient {
     private val moshi = Moshi.Builder()
         .add(KotlinJsonAdapterFactory())
         .build()
@@ -82,7 +82,7 @@ suspend fun search(
 ) {
     withContext(Dispatchers.IO) {
         runCatching {
-            jishoClient.jishoApi.keyword(keyword, page)
+            JishoClient.jishoApi.keyword(keyword, page)
         }.onSuccess { response ->
             onSuccess(response)
         }.onFailure { e ->

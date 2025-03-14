@@ -277,7 +277,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private suspend fun PointerInputScope.tapGesture(
-        searchModel: Model,
+        viewModel: Model,
         annotatedString: AnnotatedString,
         textLayoutResult: TextLayoutResult?
     ) {
@@ -289,8 +289,8 @@ class MainActivity : ComponentActivity() {
                     offsetPosition,
                     offsetPosition
                 ).firstOrNull()?.let { annotation ->
-                    searchModel.modelSearch(annotation.item)
-                    searchModel.iPos.value = annotation.item.length
+                    viewModel.modelSearch(annotation.item)
+                    viewModel.iPos.value = annotation.item.length
                 }
             }
         }
