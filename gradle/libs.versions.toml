@@ -1,13 +1,13 @@
 [versions]
 agp = "8.9.0"
 kotlin = "2.1.10"
-
 coreKtx = "1.15.0"
 activityCompose = "1.10.1"
 composeBom = "2025.03.00"
-converterMoshi = "2.9.0"
-moshiKotlin = "1.14.0"
+kotlinxSerializationJson = "1.6.3"
 retrofit = "2.9.0"
+okhttp3 = "4.12.0"
+retrofitConverter = "1.0.0"
 
 
 [libraries]
@@ -16,14 +16,13 @@ androidx-activity-compose = { group = "androidx.activity", name = "activity-comp
 androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
 androidx-ui = { group = "androidx.compose.ui", name = "ui" }
 androidx-material3 = { group = "androidx.compose.material3", name = "material3" }
-
-converter-moshi = { module = "com.squareup.retrofit2:converter-moshi", version.ref = "converterMoshi" }
-moshi-kotlin = { module = "com.squareup.moshi:moshi-kotlin", version.ref = "moshiKotlin" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
 retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
+okhttp3 = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp3" }
+retrofit-converter = { group = "com.jakewharton.retrofit", name = "retrofit2-kotlinx-serialization-converter", version.ref = "retrofitConverter" }
 
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
-
 jetbrains-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
