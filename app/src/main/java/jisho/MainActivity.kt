@@ -128,7 +128,7 @@ class MainActivity : ComponentActivity() {
                 onValueChange(newValue.text)
             },
             modifier = Modifier
-                .padding(top = 16.dp),
+                .padding(top = 16.dp, bottom = 8.dp),
             placeholder = { Text("Search") },
             colors = TextFieldDefaults.colors(
                 unfocusedIndicatorColor = Color.Transparent,
