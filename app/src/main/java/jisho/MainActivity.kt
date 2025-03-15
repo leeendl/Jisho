@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,14 +14,13 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -85,26 +85,17 @@ class MainActivity : ComponentActivity() {
         private val _results = MutableStateFlow<List<JishoData>>(emptyList())
         val results: StateFlow<List<JishoData>> get() = _results
 
-        private val _pending = MutableStateFlow(false)
-        val pending: StateFlow<Boolean> get() = _pending
-
         val iPos = MutableStateFlow(0)
 
         fun modelSearch(query: String, page: Int = 1) {
             _search.value = query
             iPos.value = query.length
             if (query.isNotEmpty()) {
-                _pending.value = true
                 viewModelScope.launch {
                     val thisQuery = _search.value
                     search(query, page, { word ->
                         if (thisQuery == _search.value) {
                             _results.value = word.data
-                            _pending.value = false
-                        }
-                    }, {
-                        if (thisQuery == _search.value) {
-                            _pending.value = false
                         }
                     })
                 }
@@ -120,7 +111,6 @@ class MainActivity : ComponentActivity() {
         onValueChange: (String) -> Unit
     ) {
         val search by viewModel.search.collectAsState("")
-        val pending by viewModel.pending.collectAsState(false)
         val iPos by viewModel.iPos.collectAsState(0)
         TextField(
             value = TextFieldValue(text = search, selection = TextRange(iPos)),
@@ -128,21 +118,24 @@ class MainActivity : ComponentActivity() {
                 onValueChange(newValue.text)
             },
             modifier = Modifier
-                .padding(top = 16.dp, bottom = 8.dp),
+                .padding(top = 16.dp, bottom = 8.dp)
+                .border(3.dp, Color(0xFF6E6E6E), RoundedCornerShape(6.dp)),
             placeholder = { Text("Search") },
             colors = TextFieldDefaults.colors(
                 unfocusedIndicatorColor = Color.Transparent,
                 focusedIndicatorColor = Color.Transparent
             ),
-            leadingIcon = {
-                Icon(
-                    painter = painterResource(R.drawable.ic_search),
-                    contentDescription = "Search"
-                )
-            },
             trailingIcon = {
-                if (pending) {
-                    CircularProgressIndicator(Modifier.size(20.dp))
+                IconButton(
+                    onClick = {  }, // @todo
+                    modifier = Modifier
+                        .padding(6.dp)
+                        .background(color = Color(0xFF6A6A6A))
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_search),
+                        contentDescription = "Search"
+                    )
                 }
             }
         )
