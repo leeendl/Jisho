@@ -126,16 +126,29 @@ class MainActivity : ComponentActivity() {
                 focusedIndicatorColor = Color.Transparent
             ),
             trailingIcon = {
-                IconButton(
-                    onClick = {  }, // @todo
-                    modifier = Modifier
-                        .padding(6.dp)
-                        .background(color = Color(0xFF6A6A6A))
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy((-6).dp),
+                    verticalAlignment = Alignment.CenterVertically // @note adapt with ic_search padding
                 ) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_search),
-                        contentDescription = "Search"
-                    )
+                    IconButton(
+                        onClick = { onValueChange("") }
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_clear),
+                            contentDescription = "Clear"
+                        )
+                    }
+                    IconButton(
+                        onClick = { }, // @todo
+                        modifier = Modifier
+                            .padding(6.dp)
+                            .background(color = Color(0xFF6A6A6A))
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_search),
+                            contentDescription = "Search"
+                        )
+                    }
                 }
             }
         )
