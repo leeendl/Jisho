@@ -135,13 +135,15 @@ class MainActivity : ComponentActivity() {
                     horizontalArrangement = Arrangement.spacedBy((-6).dp),
                     verticalAlignment = Alignment.CenterVertically // @note adapt with ic_search padding
                 ) {
-                    IconButton(
-                        onClick = { onValueChange("") }
-                    ) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_clear),
-                            contentDescription = "Clear"
-                        )
+                    if (search.isNotEmpty()) {
+                        IconButton(
+                            onClick = { onValueChange("") }
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_clear),
+                                contentDescription = "Clear"
+                            )
+                        }
                     }
                     IconButton(
                         onClick = { }, // @todo
