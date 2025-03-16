@@ -230,8 +230,14 @@ class MainActivity : ComponentActivity() {
                 }
                 for ((index, sense) in word.senses.withIndex()) {
                     val annotatedString = buildAnnotatedString {
-                        withStyle(SpanStyle(color = Color(0xFFAAAAAA), fontSize = 16.sp)) {
-                            append("${sense.partsOfSpeech.firstOrNull().orEmpty()}\n")
+                        withStyle(
+                            SpanStyle(
+                                color = Color(0xFFAAAAAA),
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        ) {
+                            append("${sense.partsOfSpeech.joinToString(", ") { it }}\n")
                         }
                         withStyle(SpanStyle(color = Color(0xFF999999), fontSize = 18.sp)) {
                             append("${index + 1}.  ")
@@ -257,7 +263,6 @@ class MainActivity : ComponentActivity() {
                                 append("  ${sense.info.firstOrNull().orEmpty()}")
                             }
                         }
-                        append('\n')
                     }
                     var textLayoutResult: TextLayoutResult? = null
                     Text(
@@ -265,7 +270,8 @@ class MainActivity : ComponentActivity() {
                         modifier = Modifier
                             .pointerInput(annotatedString) {
                                 tapGesture(viewModel, annotatedString, textLayoutResult)
-                            },
+                            }
+                            .padding(10.dp),
                         onTextLayout = { textLayoutResult = it },
                         style = TextStyle(fontSize = 20.sp)
                     )
