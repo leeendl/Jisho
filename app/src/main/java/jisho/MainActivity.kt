@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.lazy.LazyColumn
@@ -118,6 +119,7 @@ class MainActivity : ComponentActivity() {
                 onValueChange(newValue.text)
             },
             modifier = Modifier
+                .fillMaxWidth()
                 .padding(top = 16.dp, bottom = 8.dp)
                 .border(3.dp, Color(0xFF6E6E6E), RoundedCornerShape(6.dp)),
             placeholder = { Text("Search") },
@@ -125,6 +127,9 @@ class MainActivity : ComponentActivity() {
                 unfocusedIndicatorColor = Color.Transparent,
                 focusedIndicatorColor = Color.Transparent
             ),
+            leadingIcon = {
+                // @todo add keyword filter
+            },
             trailingIcon = {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy((-6).dp),
@@ -158,50 +163,50 @@ class MainActivity : ComponentActivity() {
     fun Results(results: List<JishoData>, viewModel: Model) {
         val search by viewModel.search.collectAsState()
         if (search.isEmpty()) return
-        if (search.all { it in 'a'..'z' || it in 'A'..'Z' } &&
-            search.canEtoH()) {
-            val annotatedString = buildAnnotatedString {
-                append("Searched for ${replaceEtoH(search)}. You can also try a search for ")
-                pushStringAnnotation(
-                    tag = "clickSearch",
-                    annotation = "\"$search\""
-                )
-                withStyle(SpanStyle(textDecoration = TextDecoration.Underline)) {
-                    append("\"$search\"")
-                }
-                pop()
-                append(".")
-            }
-            var textLayoutResult: TextLayoutResult? = null
-            Text(
-                text = annotatedString,
-                modifier = Modifier
-                    .pointerInput(annotatedString) {
-                        tapGesture(viewModel, annotatedString, textLayoutResult)
-                    },
-                onTextLayout = { textLayoutResult = it }
-            )
-        }
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(8.dp)
         ) {
-            items(results) { word ->
-                Column {
+            item {
+                if (search.all { it in 'a'..'z' || it in 'A'..'Z' } &&
+                    search.canEtoH()) {
+                    val annotatedString = buildAnnotatedString {
+                        append("Searched for ${replaceEtoH(search)}. You can also try a search for ")
+                        pushStringAnnotation(
+                            tag = "clickSearch",
+                            annotation = "\"$search\""
+                        )
+                        withStyle(SpanStyle(textDecoration = TextDecoration.Underline)) {
+                            append("\"$search\"")
+                        }
+                        pop()
+                        append(".")
+                    }
+                    var textLayoutResult: TextLayoutResult? = null
                     Text(
-                        text = word.japanese.firstOrNull()?.let { japanese ->
-                            if (japanese.word != null) japanese.reading else ""
-                        }.orEmpty(),
+                        text = annotatedString,
+                        modifier = Modifier
+                            .pointerInput(annotatedString) {
+                                tapGesture(viewModel, annotatedString, textLayoutResult)
+                            },
+                        onTextLayout = { textLayoutResult = it }
+                    )
+                }
+            }
+            items(results) { word ->
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    var japanese = word.japanese.firstOrNull()
+                    Text(
+                        text = japanese?.let { if (it.word != null) it.reading else "" }.orEmpty(),
                         fontSize = 16.sp
                     )
                     Text(
-                        text = word.japanese.firstOrNull()?.let { japanese ->
-                            japanese.word ?: japanese.reading
-                        }.orEmpty(),
+                        text = japanese?.let { it.word ?: it.reading }.orEmpty(),
                         fontSize = 32.sp
                     )
-
                 }
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -291,8 +296,8 @@ class MainActivity : ComponentActivity() {
         textLayoutResult: TextLayoutResult?
     ) {
         this.detectTapGestures { offset ->
-            textLayoutResult?.let { layoutResult ->
-                val offsetPosition = layoutResult.getOffsetForPosition(offset)
+            textLayoutResult?.let {
+                val offsetPosition = it.getOffsetForPosition(offset)
                 annotatedString.getStringAnnotations(
                     "clickSearch",
                     offsetPosition,
