@@ -1,6 +1,6 @@
 package jisho
 
-val EtoH = mapOf(
+private val EtoH = mapOf(
     "a" to "あ", "i" to "い", "u" to "う", "e" to "え", "o" to "お",
     "ka" to "か", "ki" to "き", "ku" to "く", "ke" to "け", "ko" to "こ",
     "sa" to "さ", "shi" to "し", "su" to "す", "se" to "せ", "so" to "そ",
@@ -35,7 +35,8 @@ val EtoH = mapOf(
     "aa" to "あー", "ii" to "いー", "uu" to "うー", "ee" to "えー", "oo" to "おー"
 )
 
-val EtoHRegex = Regex("""(${EtoH.keys.sortedByDescending { it.length }.joinToString("|")})""")
+private val EtoHKeysSorted = EtoH.keys.sortedByDescending { it.length }
+private val EtoHRegex = Regex("""(${EtoHKeysSorted.joinToString("|")})""")
 
 /**
  * e.g. kara -> から
@@ -52,11 +53,9 @@ fun replaceEtoH(english: String): String {
 fun String.canEtoH(): Boolean {
     var remaining = this
     while (remaining.isNotEmpty()) {
-        val match = EtoH.keys
-            .filter { remaining.startsWith(it) }
-            .maxByOrNull { it.length }
-            ?: return false
-        remaining = remaining.removePrefix(match)
+        remaining = remaining.removePrefix(
+            EtoHKeysSorted.firstOrNull { remaining.startsWith(it) } ?: return false
+        )
     }
     return true
 }

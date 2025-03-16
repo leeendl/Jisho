@@ -174,7 +174,11 @@ class MainActivity : ComponentActivity() {
                 if (search.all { it in 'a'..'z' || it in 'A'..'Z' } &&
                     search.canEtoH()) {
                     val annotatedString = buildAnnotatedString {
-                        append("Searched for ${replaceEtoH(search)}. You can also try a search for ")
+                        append("Searched for ")
+                        withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
+                            append("${replaceEtoH(search)}.")
+                        }
+                        append(" You can also try a search for ")
                         pushStringAnnotation(
                             tag = "clickSearch",
                             annotation = "\"$search\""
@@ -191,8 +195,9 @@ class MainActivity : ComponentActivity() {
                         modifier = Modifier
                             .pointerInput(annotatedString) {
                                 tapGesture(viewModel, annotatedString, textLayoutResult)
-                            },
-                        onTextLayout = { textLayoutResult = it }
+                            }
+                            .padding(bottom = 18.dp),
+                        onTextLayout = { textLayoutResult = it },
                     )
                 }
             }
