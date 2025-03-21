@@ -50,8 +50,10 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import jisho.ui.theme.Theme
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -86,23 +88,27 @@ class MainActivity : ComponentActivity() {
         private val _results = MutableStateFlow<List<JishoData>>(emptyList())
         val results: StateFlow<List<JishoData>> get() = _results
 
-        val iPos = MutableStateFlow(0)
+        private val _indicatorPos = MutableStateFlow(0)
+        val indicatorPos: StateFlow<Int> get() = _indicatorPos
+
+        private var job: Job? = null
 
         fun modelSearch(query: String, page: Int = 1) {
+            job?.cancel()
+            if (query.isEmpty()) return
             _search.value = query
-            iPos.value = query.length
-            if (query.isNotEmpty()) {
-                viewModelScope.launch {
-                    val thisQuery = _search.value
-                    search(query, page, { word ->
-                        if (thisQuery == _search.value) {
-                            _results.value = word.data
-                        }
-                    })
-                }
-            } else {
-                _results.value = emptyList()
+            _indicatorPos.value = query.length
+            job = viewModelScope.launch {
+                val thisQuery = _search.value
+                search(query, page, { word ->
+                    if (thisQuery == _search.value) {
+                        _results.update { word.data }
+                    }
+                })
             }
+        }
+        fun updateIndicator(pos: Int) {
+            _indicatorPos.value = pos
         }
     }
 
@@ -112,7 +118,7 @@ class MainActivity : ComponentActivity() {
         onValueChange: (String) -> Unit
     ) {
         val search by viewModel.search.collectAsState("")
-        val iPos by viewModel.iPos.collectAsState(0)
+        val iPos by viewModel.indicatorPos.collectAsState(0)
         TextField(
             value = TextFieldValue(text = search, selection = TextRange(iPos)),
             onValueChange = { newValue ->
@@ -164,7 +170,6 @@ class MainActivity : ComponentActivity() {
     @Composable
     fun Results(results: List<JishoData>, viewModel: Model) {
         val search by viewModel.search.collectAsState()
-        if (search.isEmpty()) return
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -317,7 +322,7 @@ class MainActivity : ComponentActivity() {
                     offsetPosition
                 ).firstOrNull()?.let { annotation ->
                     viewModel.modelSearch(annotation.item)
-                    viewModel.iPos.value = annotation.item.length
+                    viewModel.updateIndicator(annotation.item.length)
                 }
             }
         }
