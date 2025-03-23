@@ -3,6 +3,7 @@ package jisho
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -60,7 +61,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         getActionBar()?.hide()
         super.onCreate(savedInstanceState)
-        val viewModel = Model()
+        val searchModel: SearchModel by viewModels()
         setContent {
             Theme {
                 Surface {
@@ -71,17 +72,17 @@ class MainActivity : ComponentActivity() {
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         SearchBar(
-                            viewModel
-                        ) { viewModel.modelSearch(it) }
-                        val results by viewModel.results.collectAsState(emptyList())
-                        if (results.isNotEmpty()) Results(results, viewModel)
+                            searchModel
+                        ) { searchModel.search(it) }
+                        val results by searchModel.results.collectAsState(emptyList())
+                        if (results.isNotEmpty()) Results(results, searchModel)
                     }
                 }
             }
         }
     }
 
-    class Model : ViewModel() {
+    class SearchModel : ViewModel() {
         private val _search = MutableStateFlow("")
         val search: StateFlow<String> get() = _search
 
@@ -93,11 +94,14 @@ class MainActivity : ComponentActivity() {
 
         private var job: Job? = null
 
-        fun modelSearch(query: String, page: Int = 1) {
+        fun search(query: String, page: Int = 1) {
             job?.cancel()
-            if (query.isEmpty()) return
             _search.value = query
             _indicatorPos.value = query.length
+            if (query.isEmpty()) {
+                _results.update { emptyList() }
+                return
+            }
             job = viewModelScope.launch {
                 val thisQuery = _search.value
                 search(query, page, { word ->
@@ -107,6 +111,7 @@ class MainActivity : ComponentActivity() {
                 })
             }
         }
+
         fun updateIndicator(pos: Int) {
             _indicatorPos.value = pos
         }
@@ -114,11 +119,11 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     private fun SearchBar(
-        viewModel: Model,
+        searchModel: SearchModel,
         onValueChange: (String) -> Unit
     ) {
-        val search by viewModel.search.collectAsState("")
-        val iPos by viewModel.indicatorPos.collectAsState(0)
+        val search by searchModel.search.collectAsState("")
+        val iPos by searchModel.indicatorPos.collectAsState(0)
         TextField(
             value = TextFieldValue(text = search, selection = TextRange(iPos)),
             onValueChange = { newValue ->
@@ -126,13 +131,8 @@ class MainActivity : ComponentActivity() {
             },
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 16.dp, bottom = 8.dp)
                 .border(3.dp, Color(0xFF6E6E6E), RoundedCornerShape(6.dp)),
             placeholder = { Text("Search") },
-            colors = TextFieldDefaults.colors(
-                unfocusedIndicatorColor = Color.Transparent,
-                focusedIndicatorColor = Color.Transparent
-            ),
             leadingIcon = {
                 // @todo add keyword filter
             },
@@ -163,13 +163,18 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                 }
-            }
+            },
+            singleLine = true,
+            colors = TextFieldDefaults.colors(
+                unfocusedIndicatorColor = Color.Transparent,
+                focusedIndicatorColor = Color.Transparent
+            )
         )
     }
 
     @Composable
-    fun Results(results: List<JishoData>, viewModel: Model) {
-        val search by viewModel.search.collectAsState()
+    fun Results(results: List<JishoData>, searchModel: SearchModel) {
+        val search by searchModel.search.collectAsState()
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -199,7 +204,7 @@ class MainActivity : ComponentActivity() {
                         text = annotatedString,
                         modifier = Modifier
                             .pointerInput(annotatedString) {
-                                tapGesture(viewModel, annotatedString, textLayoutResult)
+                                tapGesture(searchModel, annotatedString, textLayoutResult)
                             }
                             .padding(bottom = 18.dp),
                         onTextLayout = { textLayoutResult = it },
@@ -274,7 +279,7 @@ class MainActivity : ComponentActivity() {
                         text = annotatedString,
                         modifier = Modifier
                             .pointerInput(annotatedString) {
-                                tapGesture(viewModel, annotatedString, textLayoutResult)
+                                tapGesture(searchModel, annotatedString, textLayoutResult)
                             }
                             .padding(10.dp),
                         onTextLayout = { textLayoutResult = it },
@@ -309,7 +314,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private suspend fun PointerInputScope.tapGesture(
-        viewModel: Model,
+        searchModel: SearchModel,
         annotatedString: AnnotatedString,
         textLayoutResult: TextLayoutResult?
     ) {
@@ -321,8 +326,8 @@ class MainActivity : ComponentActivity() {
                     offsetPosition,
                     offsetPosition
                 ).firstOrNull()?.let { annotation ->
-                    viewModel.modelSearch(annotation.item)
-                    viewModel.updateIndicator(annotation.item.length)
+                    searchModel.search(annotation.item)
+                    searchModel.updateIndicator(annotation.item.length)
                 }
             }
         }
