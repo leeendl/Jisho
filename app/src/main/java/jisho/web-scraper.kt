@@ -8,13 +8,13 @@ import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 
 data class JishoScraps(
-    val furigana: String,
+    val furigana: List<String>? = null,
     val text: String
 )
 
 fun conceptLightRepresentation(concept: Element): JishoScraps {
     return JishoScraps(
-        concept.select(".furigana .kanji").joinToString("") { it.text() },
+        concept.select(".furigana .kanji").map { it.text() },
         concept.select(".text").text()
     )
 }
