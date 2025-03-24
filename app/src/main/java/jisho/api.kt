@@ -13,7 +13,7 @@ import retrofit2.http.GET
 import retrofit2.http.Query
 import java.util.concurrent.TimeUnit
 
-private const val JISHO_URL = "https://jisho.org/"
+const val JISHO_URL = "https://jisho.org"
 private const val JISHO_API = "api/v1/search/words"
 
 @Serializable

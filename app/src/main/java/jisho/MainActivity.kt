@@ -82,41 +82,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    class SearchModel : ViewModel() {
-        private val _search = MutableStateFlow("")
-        val search: StateFlow<String> get() = _search
-
-        private val _results = MutableStateFlow<List<JishoData>>(emptyList())
-        val results: StateFlow<List<JishoData>> get() = _results
-
-        private val _indicatorPos = MutableStateFlow(0)
-        val indicatorPos: StateFlow<Int> get() = _indicatorPos
-
-        private var job: Job? = null
-
-        fun search(query: String, page: Int = 1) {
-            job?.cancel()
-            _search.value = query
-            _indicatorPos.value = query.length
-            if (query.isEmpty()) {
-                _results.update { emptyList() }
-                return
-            }
-            job = viewModelScope.launch {
-                val thisQuery = _search.value
-                search(query, page, { word ->
-                    if (thisQuery == _search.value) {
-                        _results.update { word.data }
-                    }
-                })
-            }
-        }
-
-        fun updateIndicator(pos: Int) {
-            _indicatorPos.value = pos
-        }
-    }
-
     @Composable
     private fun SearchBar(
         searchModel: SearchModel,
@@ -330,6 +295,39 @@ class MainActivity : ComponentActivity() {
                     searchModel.updateIndicator(annotation.item.length)
                 }
             }
+        }
+    }
+
+    class SearchModel : ViewModel() {
+        private val _search = MutableStateFlow("")
+        val search: StateFlow<String> get() = _search
+
+        private val _results = MutableStateFlow<List<JishoData>>(emptyList())
+        val results: StateFlow<List<JishoData>> get() = _results
+
+        private var job: Job? = null
+        fun search(query: String, page: Int = 1) {
+            job?.cancel()
+            _search.value = query
+            _indicatorPos.value = query.length
+            if (query.isEmpty()) {
+                _results.update { emptyList() }
+                return
+            }
+            job = viewModelScope.launch {
+                val thisQuery = _search.value
+                search(query, page, { word ->
+                    if (thisQuery == _search.value) {
+                        _results.update { word.data }
+                    }
+                })
+            }
+        }
+
+        private val _indicatorPos = MutableStateFlow(0)
+        val indicatorPos: StateFlow<Int> get() = _indicatorPos
+        fun updateIndicator(pos: Int) {
+            _indicatorPos.value = pos
         }
     }
 }

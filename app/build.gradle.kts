@@ -14,8 +14,8 @@ android {
         minSdk = 21
         targetSdk = 36
 
-        versionCode = 41
-        versionName = "1.0-41"
+        versionCode = 42
+        versionName = "1.0-42"
 
     }
 
@@ -54,4 +54,5 @@ dependencies {
     implementation(libs.retrofit.converter)
     implementation(libs.retrofit)
     implementation(libs.okhttp3)
+    implementation(libs.jsoup)
 }
