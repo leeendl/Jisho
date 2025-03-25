@@ -54,8 +54,8 @@ import jisho.ui.theme.Theme
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.coroutines.cancellation.CancellationException
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -283,16 +283,17 @@ class MainActivity : ComponentActivity() {
         annotatedString: AnnotatedString,
         textLayoutResult: TextLayoutResult?
     ) {
+        textLayoutResult ?: return
         this.detectTapGestures { offset ->
-            textLayoutResult?.let {
-                val offsetPosition = it.getOffsetForPosition(offset)
-                annotatedString.getStringAnnotations(
-                    "clickSearch",
-                    offsetPosition,
-                    offsetPosition
-                ).firstOrNull()?.let { annotation ->
-                    searchModel.search(annotation.item)
-                    searchModel.updateIndicator(annotation.item.length)
+            val offsetPosition = textLayoutResult.getOffsetForPosition(offset)
+            annotatedString.getStringAnnotations(
+                "clickSearch",
+                offsetPosition,
+                offsetPosition
+            ).firstOrNull()?.let { annotation ->
+                with(searchModel) {
+                    search(annotation.item)
+                    updateIndicator(annotation.item.length)
                 }
             }
         }
@@ -307,20 +308,17 @@ class MainActivity : ComponentActivity() {
 
         private var job: Job? = null
         fun search(query: String, page: Int = 1) {
-            job?.cancel()
             _search.value = query
             _indicatorPos.value = query.length
-            if (query.isEmpty()) {
-                _results.update { emptyList() }
-                return
-            }
+            job?.takeIf { it.isActive }?.cancel()
             job = viewModelScope.launch {
-                val thisQuery = _search.value
-                search(query, page, { word ->
-                    if (thisQuery == _search.value) {
-                        _results.update { word.data }
-                    }
-                })
+                try {
+                    search(query, page, { word ->
+                        _results.value = word.data
+                    })
+                } catch (_: CancellationException) {
+                    _results.value = emptyList()
+                }
             }
         }
 

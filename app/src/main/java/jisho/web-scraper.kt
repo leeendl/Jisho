@@ -8,16 +8,14 @@ import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 
 data class JishoScraps(
-    val furigana: List<String>? = null,
+    val furigana: List<String> = emptyList(),
     val text: String
 )
 
-fun conceptLightRepresentation(concept: Element): JishoScraps {
-    return JishoScraps(
-        concept.select(".furigana .kanji").map { it.text() },
-        concept.select(".text").text()
-    )
-}
+fun conceptLightRepresentation(concept: Element): JishoScraps = JishoScraps(
+    concept.select(".furigana .kanji").map { it.text() },
+    concept.select(".text").text()
+)
 
 fun scraperTester(query: String, onResult: (List<JishoScraps>) -> Unit) {
     CoroutineScope(Dispatchers.IO).launch {
