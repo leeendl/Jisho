@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
@@ -53,6 +54,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -65,23 +68,23 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         val searchModel: SearchModel by viewModels()
         setContent {
+            val results by searchModel.results.collectAsState(emptyList())
+            val listState = remember { LazyListState() }
             MaterialTheme(
                 colorScheme = darkColorScheme()
             ) {
                 Surface {
-                    val results by searchModel.results.collectAsState(emptyList())
                     LazyColumn(
+                        state = listState,
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(WindowInsets.systemBars.asPaddingValues())
                     ) {
                         item {
-                            SearchBar(
-                                searchModel
-                            ) { searchModel.search(it) }
+                            SearchBar(searchModel, listState)
                         }
                         items(results) { jishoData ->
-                            ItemColumn(jishoData, searchModel)
+                            ItemColumn(jishoData, searchModel, listState)
                         }
                     }
                 }
@@ -92,14 +95,17 @@ class MainActivity : ComponentActivity() {
     @Composable
     private fun SearchBar(
         searchModel: SearchModel,
-        onValueChange: (String) -> Unit
+        listState: LazyListState
     ) {
         val search by searchModel.search.collectAsState("")
         val iPos by searchModel.indicatorPos.collectAsState(0)
         TextField(
             value = TextFieldValue(text = search, selection = TextRange(iPos)),
             onValueChange = {
-                onValueChange(it.text)
+                searchModel.search(it.text)
+                CoroutineScope(Dispatchers.Main).launch {
+                    listState.scrollToItem(0)
+                }
             },
             modifier = Modifier
                 .fillMaxWidth()
@@ -115,7 +121,7 @@ class MainActivity : ComponentActivity() {
                 ) {
                     if (search.isNotEmpty()) {
                         IconButton(
-                            onClick = { onValueChange("") }
+                            onClick = { searchModel.search("") }
                         ) {
                             Icon(
                                 painter = painterResource(R.drawable.ic_clear),
@@ -145,7 +151,11 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    fun ItemColumn(jishoData: JishoData, searchModel: SearchModel) {
+    fun ItemColumn(
+        jishoData: JishoData,
+        searchModel: SearchModel,
+        listState: LazyListState
+    ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -221,7 +231,7 @@ class MainActivity : ComponentActivity() {
                 text = annotatedString,
                 modifier = Modifier
                     .pointerInput(Unit) {
-                        tapGesture(searchModel, annotatedString, textLayoutResult)
+                        tapGesture(searchModel, annotatedString, textLayoutResult, listState)
                     }
                     .padding(10.dp),
                 onTextLayout = { textLayoutResult = it },
@@ -256,7 +266,8 @@ class MainActivity : ComponentActivity() {
     private suspend fun PointerInputScope.tapGesture(
         searchModel: SearchModel,
         annotatedString: AnnotatedString,
-        textLayoutResult: TextLayoutResult?
+        textLayoutResult: TextLayoutResult?,
+        listState: LazyListState
     ) {
         textLayoutResult ?: return
         this.detectTapGestures { offset ->
@@ -269,6 +280,9 @@ class MainActivity : ComponentActivity() {
                 with(searchModel) {
                     search(annotation.item)
                     updateIndicator(annotation.item.length)
+                    CoroutineScope(Dispatchers.Main).launch {
+                        listState.scrollToItem(0)
+                    }
                 }
             }
         }
