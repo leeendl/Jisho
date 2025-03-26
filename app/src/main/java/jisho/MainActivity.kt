@@ -23,13 +23,16 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -50,7 +53,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import jisho.ui.theme.Theme
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -63,19 +65,24 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         val searchModel: SearchModel by viewModels()
         setContent {
-            Theme {
+            MaterialTheme(
+                colorScheme = darkColorScheme()
+            ) {
                 Surface {
-                    Column(
-                        Modifier
+                    val results by searchModel.results.collectAsState(emptyList())
+                    LazyColumn(
+                        modifier = Modifier
                             .fillMaxSize()
-                            .padding(WindowInsets.systemBars.asPaddingValues()), // @note on screen camera
-                        horizontalAlignment = Alignment.CenterHorizontally
+                            .padding(WindowInsets.systemBars.asPaddingValues())
                     ) {
-                        SearchBar(
-                            searchModel
-                        ) { searchModel.search(it) }
-                        val results by searchModel.results.collectAsState(emptyList())
-                        if (results.isNotEmpty()) Results(results, searchModel)
+                        item {
+                            SearchBar(
+                                searchModel
+                            ) { searchModel.search(it) }
+                        }
+                        items(results) { jishoData ->
+                            ItemColumn(jishoData, searchModel)
+                        }
                     }
                 }
             }
@@ -91,8 +98,8 @@ class MainActivity : ComponentActivity() {
         val iPos by searchModel.indicatorPos.collectAsState(0)
         TextField(
             value = TextFieldValue(text = search, selection = TextRange(iPos)),
-            onValueChange = { newValue ->
-                onValueChange(newValue.text)
+            onValueChange = {
+                onValueChange(it.text)
             },
             modifier = Modifier
                 .fillMaxWidth()
@@ -138,122 +145,90 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    fun Results(results: List<JishoData>, searchModel: SearchModel) {
-        val search by searchModel.search.collectAsState()
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(8.dp)
+    fun ItemColumn(jishoData: JishoData, searchModel: SearchModel) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            item {
-                if (search.all { it in 'a'..'z' || it in 'A'..'Z' } &&
-                    search.canEtoH()) {
-                    val annotatedString = buildAnnotatedString {
-                        append("Searched for ")
-                        withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
-                            append("${replaceEtoH(search)}.")
-                        }
-                        append(" You can also try a search for ")
-                        pushStringAnnotation(
-                            tag = "clickSearch",
-                            annotation = "\"$search\""
-                        )
-                        withStyle(SpanStyle(textDecoration = TextDecoration.Underline)) {
-                            append("\"$search\"")
-                        }
-                        pop()
-                        append(".")
-                    }
-                    var textLayoutResult: TextLayoutResult? = null
-                    Text(
-                        text = annotatedString,
-                        modifier = Modifier
-                            .pointerInput(annotatedString) {
-                                tapGesture(searchModel, annotatedString, textLayoutResult)
-                            }
-                            .padding(bottom = 18.dp),
-                        onTextLayout = { textLayoutResult = it },
-                    )
-                }
+            var japanese = jishoData.japanese.firstOrNull()
+            Text(
+                text = japanese?.let { if (it.word != null) it.reading else "" }.orEmpty(),
+                fontSize = 16.sp
+            )
+            Text(
+                text = japanese?.let { it.word ?: it.reading }.orEmpty(),
+                fontSize = 32.sp
+            )
+        }
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            if (jishoData.isCommon) {
+                wordTag("common word", Color(0xFF8abc83))
             }
-            items(results) { word ->
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    var japanese = word.japanese.firstOrNull()
-                    Text(
-                        text = japanese?.let { if (it.word != null) it.reading else "" }.orEmpty(),
-                        fontSize = 16.sp
-                    )
-                    Text(
-                        text = japanese?.let { it.word ?: it.reading }.orEmpty(),
-                        fontSize = 32.sp
-                    )
-                }
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    if (word.isCommon) {
-                        wordTag("common word", Color(0xFF8abc83))
-                    }
-                    if (word.jlpt.isNotEmpty()) {
-                        wordTag(word.jlpt.firstOrNull().orEmpty(), Color(0xFF909dc0))
-                    }
-                    if (word.tags.isNotEmpty()) {
-                        wordTag(word.tags.firstOrNull().orEmpty(), Color(0xFF909dc0))
-                    }
-                }
-                for ((index, sense) in word.senses.withIndex()) {
-                    val annotatedString = buildAnnotatedString {
-                        withStyle(
-                            SpanStyle(
-                                color = Color(0xFFAAAAAA),
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        ) {
-                            append("${sense.partsOfSpeech.joinToString(", ") { it }}\n")
-                        }
-                        withStyle(SpanStyle(color = Color(0xFF999999), fontSize = 18.sp)) {
-                            append("${index + 1}.  ")
-                        }
-                        sense.englishDefinitions.forEachIndexed { index, definition ->
-                            append(definition)
-                            if (index != sense.englishDefinitions.lastIndex) append("; ")
-                        }
-                        withStyle(SpanStyle(color = Color(0xFFBBBBBB), fontSize = 16.sp)) {
-                            if (sense.seeAlso.isNotEmpty()) {
-                                append("  See also ")
-                                pushStringAnnotation(
-                                    tag = "clickSearch",
-                                    annotation = sense.seeAlso.firstOrNull().orEmpty()
-                                )
-                                withStyle(SpanStyle(textDecoration = TextDecoration.Underline)) {
-                                    append(sense.seeAlso.firstOrNull().orEmpty())
-                                }
-                                pop()
-                            }
-                            if (sense.info.isNotEmpty()) {
-                                if (sense.seeAlso.isNotEmpty()) append(',')
-                                append("  ${sense.info.firstOrNull().orEmpty()}")
-                            }
-                        }
-                    }
-                    var textLayoutResult: TextLayoutResult? = null
-                    Text(
-                        text = annotatedString,
-                        modifier = Modifier
-                            .pointerInput(annotatedString) {
-                                tapGesture(searchModel, annotatedString, textLayoutResult)
-                            }
-                            .padding(10.dp),
-                        onTextLayout = { textLayoutResult = it },
-                        style = TextStyle(fontSize = 20.sp)
-                    )
-                }
-                HorizontalDivider()
+            if (jishoData.jlpt.isNotEmpty()) {
+                wordTag(
+                    jishoData.jlpt.firstOrNull().orEmpty().replace("-", " "),
+                    Color(0xFF909dc0)
+                )
+            }
+            if (jishoData.tags.isNotEmpty()) {
+                wordTag(
+                    "Wanikani level ${jishoData.tags.firstOrNull()?.lastOrNull().toString()}",
+                    Color(0xFF909dc0)
+                )
             }
         }
+        for ((index, sense) in jishoData.senses.withIndex()) {
+            val annotatedString = remember(sense, index) {
+                buildAnnotatedString {
+                    withStyle(
+                        SpanStyle(
+                            color = Color(0xFFAAAAAA),
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    ) {
+                        append("${sense.partsOfSpeech.joinToString(", ") { it }}\n")
+                    }
+                    withStyle(SpanStyle(color = Color(0xFF999999), fontSize = 18.sp)) {
+                        append("${index + 1}.  ")
+                    }
+                    sense.englishDefinitions.forEachIndexed { index, definition ->
+                        append(definition)
+                        if (index != sense.englishDefinitions.lastIndex) append("; ")
+                    }
+                    withStyle(SpanStyle(color = Color(0xFFBBBBBB), fontSize = 16.sp)) {
+                        if (sense.seeAlso.isNotEmpty()) {
+                            append("  See also ")
+                            pushStringAnnotation(
+                                tag = "clickSearch",
+                                annotation = sense.seeAlso.firstOrNull().orEmpty()
+                            )
+                            withStyle(SpanStyle(textDecoration = TextDecoration.Underline)) {
+                                append(sense.seeAlso.firstOrNull().orEmpty())
+                            }
+                            pop()
+                        }
+                        if (sense.info.isNotEmpty()) {
+                            if (sense.seeAlso.isNotEmpty()) append(',')
+                            append("  ${sense.info.firstOrNull().orEmpty()}")
+                        }
+                    }
+                }
+            }
+            var textLayoutResult: TextLayoutResult? = null
+            Text(
+                text = annotatedString,
+                modifier = Modifier
+                    .pointerInput(Unit) {
+                        tapGesture(searchModel, annotatedString, textLayoutResult)
+                    }
+                    .padding(10.dp),
+                onTextLayout = { textLayoutResult = it },
+                style = TextStyle(fontSize = 20.sp)
+            )
+        }
+        HorizontalDivider()
     }
 
     @Composable
@@ -301,19 +276,25 @@ class MainActivity : ComponentActivity() {
 
     class SearchModel : ViewModel() {
         private val _search = MutableStateFlow("")
-        val search: StateFlow<String> get() = _search
+        val search: StateFlow<String> = _search
 
         private val _results = MutableStateFlow<List<JishoData>>(emptyList())
-        val results: StateFlow<List<JishoData>> get() = _results
+        val results: StateFlow<List<JishoData>> = _results
 
         private var job: Job? = null
         fun search(query: String, page: Int = 1) {
             _search.value = query
             _indicatorPos.value = query.length
             job?.takeIf { it.isActive }?.cancel()
+            if (query.isEmpty()) {
+                _results.value = emptyList()
+                return
+            }
             job = viewModelScope.launch {
                 try {
-                    search(query, page, { word ->
+                    val thisQuery = _search.value
+                    search(thisQuery, page, { word ->
+                        if (thisQuery != _search.value) throw CancellationException()
                         _results.value = word.data
                     })
                 } catch (_: CancellationException) {
@@ -323,7 +304,7 @@ class MainActivity : ComponentActivity() {
         }
 
         private val _indicatorPos = MutableStateFlow(0)
-        val indicatorPos: StateFlow<Int> get() = _indicatorPos
+        val indicatorPos: StateFlow<Int> = _indicatorPos
         fun updateIndicator(pos: Int) {
             _indicatorPos.value = pos
         }
