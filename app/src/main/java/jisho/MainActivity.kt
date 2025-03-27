@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -54,8 +55,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -64,27 +63,27 @@ import kotlin.coroutines.cancellation.CancellationException
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
-        getActionBar()?.hide()
         super.onCreate(savedInstanceState)
+        getActionBar()?.hide()
         val searchModel: SearchModel by viewModels()
         setContent {
             val results by searchModel.results.collectAsState(emptyList())
-            val listState = remember { LazyListState() }
+            val listState = rememberLazyListState()
             MaterialTheme(
-                colorScheme = darkColorScheme()
+                darkColorScheme()
             ) {
                 Surface {
                     LazyColumn(
-                        state = listState,
-                        modifier = Modifier
+                        Modifier
                             .fillMaxSize()
-                            .padding(WindowInsets.systemBars.asPaddingValues())
+                            .padding(WindowInsets.systemBars.asPaddingValues()),
+                        listState
                     ) {
                         item {
-                            SearchBar(searchModel, listState)
+                            SearchBar(searchModel)
                         }
-                        items(results) { jishoData ->
-                            ItemColumn(jishoData, searchModel, listState)
+                        items(results) {
+                            ItemColumn(it, searchModel, listState)
                         }
                     }
                 }
@@ -94,8 +93,7 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     private fun SearchBar(
-        searchModel: SearchModel,
-        listState: LazyListState
+        searchModel: SearchModel
     ) {
         val search by searchModel.search.collectAsState("")
         val iPos by searchModel.indicatorPos.collectAsState(0)
@@ -103,9 +101,6 @@ class MainActivity : ComponentActivity() {
             value = TextFieldValue(text = search, selection = TextRange(iPos)),
             onValueChange = {
                 searchModel.search(it.text)
-                CoroutineScope(Dispatchers.Main).launch {
-                    listState.scrollToItem(0)
-                }
             },
             modifier = Modifier
                 .fillMaxWidth()
@@ -276,11 +271,11 @@ class MainActivity : ComponentActivity() {
                 "clickSearch",
                 offsetPosition,
                 offsetPosition
-            ).firstOrNull()?.let { annotation ->
-                with(searchModel) {
-                    search(annotation.item)
-                    updateIndicator(annotation.item.length)
-                    CoroutineScope(Dispatchers.Main).launch {
+            ).firstOrNull()?.let {
+                searchModel.apply {
+                    search(it.item)
+                    updateIndicator(it.item.length)
+                    viewModelScope.launch {
                         listState.scrollToItem(0)
                     }
                 }
