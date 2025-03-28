@@ -11,12 +11,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
@@ -76,11 +74,11 @@ class MainActivity : ComponentActivity() {
                     LazyColumn(
                         Modifier
                             .fillMaxSize()
-                            .padding(WindowInsets.systemBars.asPaddingValues()),
+                            .systemBarsPadding(),
                         listState
                     ) {
                         item {
-                            SearchBar(searchModel)
+                            SearchBar(searchModel, listState)
                         }
                         items(results) {
                             ItemColumn(it, searchModel, listState)
@@ -93,18 +91,16 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     private fun SearchBar(
-        searchModel: SearchModel
+        searchModel: SearchModel,
+        listState: LazyListState
     ) {
-        val search by searchModel.search.collectAsState("")
-        val iPos by searchModel.indicatorPos.collectAsState(0)
+        val searchState by searchModel.searchState.collectAsState(TextFieldValue())
         TextField(
-            value = TextFieldValue(text = search, selection = TextRange(iPos)),
-            onValueChange = {
-                searchModel.search(it.text)
-            },
+            value = searchState,
+            onValueChange = { searchModel.search(it.text, listState) },
             modifier = Modifier
                 .fillMaxWidth()
-                .border(3.dp, Color(0xFF6E6E6E), RoundedCornerShape(6.dp)),
+                .border(3.dp, Color(0xFF6E6E6E)),
             placeholder = { Text("Search") },
             leadingIcon = {
                 // @todo add keyword filter
@@ -114,9 +110,9 @@ class MainActivity : ComponentActivity() {
                     horizontalArrangement = Arrangement.spacedBy((-6).dp),
                     verticalAlignment = Alignment.CenterVertically // @note adapt with ic_search padding
                 ) {
-                    if (search.isNotEmpty()) {
+                    if (searchState.text.isNotEmpty()) {
                         IconButton(
-                            onClick = { searchModel.search("") }
+                            onClick = { searchModel.search("", listState) }
                         ) {
                             Icon(
                                 painter = painterResource(R.drawable.ic_clear),
@@ -178,7 +174,7 @@ class MainActivity : ComponentActivity() {
             }
             if (jishoData.tags.isNotEmpty()) {
                 wordTag(
-                    "Wanikani level ${jishoData.tags.firstOrNull()?.lastOrNull().toString()}",
+                    "wanikani level ${jishoData.tags.firstOrNull()?.lastOrNull().toString()}",
                     Color(0xFF909dc0)
                 )
             }
@@ -245,15 +241,19 @@ class MainActivity : ComponentActivity() {
             modifier = Modifier
                 .background(
                     color = backgroundColor,
-                    shape = RoundedCornerShape(4.dp)
+                    shape = RoundedCornerShape(2.dp)
                 )
-                .padding(start = 5.dp, end = 3.dp)
+                .padding(start = 6.dp, end = 4.dp)
         ) {
             Text(
                 text = label,
-                color = Color(0xFF222222),
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Bold
+                maxLines = 1,
+                style = MaterialTheme.typography.labelLarge.copy(
+                    color = Color(0xFF222222),
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 0.6.sp,
+                    fontSize = 12.sp
+                )
             )
         }
     }
@@ -273,49 +273,39 @@ class MainActivity : ComponentActivity() {
                 offsetPosition
             ).firstOrNull()?.let {
                 searchModel.apply {
-                    search(it.item)
-                    updateIndicator(it.item.length)
-                    viewModelScope.launch {
-                        listState.scrollToItem(0)
-                    }
+                    search(it.item, listState)
                 }
             }
         }
     }
 
     class SearchModel : ViewModel() {
-        private val _search = MutableStateFlow("")
-        val search: StateFlow<String> = _search
+        private val _searchState = MutableStateFlow(TextFieldValue())
+        val searchState: StateFlow<TextFieldValue> = _searchState
 
         private val _results = MutableStateFlow<List<JishoData>>(emptyList())
         val results: StateFlow<List<JishoData>> = _results
 
         private var job: Job? = null
-        fun search(query: String, page: Int = 1) {
-            _search.value = query
-            _indicatorPos.value = query.length
+        fun search(query: String, listState: LazyListState, page: Int = 1) {
+            _searchState.value = TextFieldValue(query, TextRange(query.length))
             job?.takeIf { it.isActive }?.cancel()
             if (query.isEmpty()) {
                 _results.value = emptyList()
                 return
             }
             job = viewModelScope.launch {
-                try {
-                    val thisQuery = _search.value
+                runCatching {
+                    val thisQuery = _searchState.value.text
                     search(thisQuery, page, { word ->
-                        if (thisQuery != _search.value) throw CancellationException()
+                        if (thisQuery != _searchState.value.text) throw CancellationException()
                         _results.value = word.data
                     })
-                } catch (_: CancellationException) {
-                    _results.value = emptyList()
+                    listState.scrollToItem(0)
+                }.onFailure {
+                    if (it is CancellationException) _results.value = emptyList()
                 }
             }
-        }
-
-        private val _indicatorPos = MutableStateFlow(0)
-        val indicatorPos: StateFlow<Int> = _indicatorPos
-        fun updateIndicator(pos: Int) {
-            _indicatorPos.value = pos
         }
     }
 }
