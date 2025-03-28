@@ -45,6 +45,8 @@ import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextDecoration
@@ -60,6 +62,9 @@ import kotlinx.coroutines.launch
 import kotlin.coroutines.cancellation.CancellationException
 
 class MainActivity : ComponentActivity() {
+    private val natsumeMoji = FontFamily(
+        Font(R.font.natumemozi)
+    )
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         getActionBar()?.hide()
@@ -153,11 +158,12 @@ class MainActivity : ComponentActivity() {
             var japanese = jishoData.japanese.firstOrNull()
             Text(
                 text = japanese?.let { if (it.word != null) it.reading else "" }.orEmpty(),
-                fontSize = 16.sp
+                fontFamily = natsumeMoji
             )
             Text(
                 text = japanese?.let { it.word ?: it.reading }.orEmpty(),
-                fontSize = 32.sp
+                fontSize = 36.sp,
+                fontFamily = natsumeMoji
             )
         }
         Row(
@@ -205,7 +211,7 @@ class MainActivity : ComponentActivity() {
                                 tag = "clickSearch",
                                 annotation = sense.seeAlso.firstOrNull().orEmpty()
                             )
-                            withStyle(SpanStyle(textDecoration = TextDecoration.Underline)) {
+                            withStyle(SpanStyle(textDecoration = TextDecoration.Underline, fontFamily = natsumeMoji)) {
                                 append(sense.seeAlso.firstOrNull().orEmpty())
                             }
                             pop()
