@@ -58,6 +58,7 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.coroutines.cancellation.CancellationException
 
@@ -87,6 +88,7 @@ class MainActivity : ComponentActivity() {
                         }
                         items(results) {
                             ItemColumn(it, searchModel, listState)
+                            HorizontalDivider()
                         }
                     }
                 }
@@ -111,29 +113,13 @@ class MainActivity : ComponentActivity() {
                 // @todo add keyword filter
             },
             trailingIcon = {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy((-6).dp),
-                    verticalAlignment = Alignment.CenterVertically // @note adapt with ic_search padding
-                ) {
-                    if (searchState.text.isNotEmpty()) {
-                        IconButton(
-                            onClick = { searchModel.search("", listState) }
-                        ) {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_clear),
-                                contentDescription = "Clear"
-                            )
-                        }
-                    }
+                if (searchState.text.isNotEmpty()) {
                     IconButton(
-                        onClick = { }, // @todo
-                        modifier = Modifier
-                            .padding(6.dp)
-                            .background(color = Color(0xFF6A6A6A))
+                        onClick = { searchModel.resetField() }
                     ) {
                         Icon(
-                            painter = painterResource(R.drawable.ic_search),
-                            contentDescription = "Search"
+                            painter = painterResource(R.drawable.ic_clear),
+                            contentDescription = "Clear"
                         )
                     }
                 }
@@ -167,19 +153,20 @@ class MainActivity : ComponentActivity() {
             )
         }
         Row(
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            modifier = Modifier.padding(4.dp)
         ) {
             if (jishoData.isCommon) {
-                wordTag("common word", Color(0xFF8abc83))
+                categoryTag("common word", Color(0xFF8abc83))
             }
             if (jishoData.jlpt.isNotEmpty()) {
-                wordTag(
+                categoryTag(
                     jishoData.jlpt.firstOrNull().orEmpty().replace("-", " "),
                     Color(0xFF909dc0)
                 )
             }
             if (jishoData.tags.isNotEmpty()) {
-                wordTag(
+                categoryTag(
                     "wanikani level ${jishoData.tags.firstOrNull()?.lastOrNull().toString()}",
                     Color(0xFF909dc0)
                 )
@@ -235,11 +222,10 @@ class MainActivity : ComponentActivity() {
                 style = TextStyle(fontSize = 20.sp)
             )
         }
-        HorizontalDivider()
     }
 
     @Composable
-    private fun wordTag(
+    private fun categoryTag(
         label: String,
         backgroundColor: Color
     ) {
@@ -253,7 +239,6 @@ class MainActivity : ComponentActivity() {
         ) {
             Text(
                 text = label,
-                maxLines = 1,
                 style = MaterialTheme.typography.labelLarge.copy(
                     color = Color(0xFF222222),
                     fontWeight = FontWeight.Bold,
@@ -294,10 +279,10 @@ class MainActivity : ComponentActivity() {
 
         private var job: Job? = null
         fun search(query: String, listState: LazyListState, page: Int = 1) {
-            _searchState.value = TextFieldValue(query, TextRange(query.length))
-            job?.takeIf { it.isActive }?.cancel()
-            if (query.isEmpty()) {
-                _results.value = emptyList()
+            _searchState.update { it.copy(text = query, selection = TextRange(query.length)) }
+            job?.cancel()
+            if (query.isBlank()) {
+                _results.update { emptyList() }
                 return
             }
             job = viewModelScope.launch {
@@ -305,13 +290,16 @@ class MainActivity : ComponentActivity() {
                     val thisQuery = _searchState.value.text
                     search(thisQuery, page, { word ->
                         if (thisQuery != _searchState.value.text) throw CancellationException()
-                        _results.value = word.data
+                        _results.update { word.data }
                     })
                     listState.scrollToItem(0)
                 }.onFailure {
-                    if (it is CancellationException) _results.value = emptyList()
+                    if (it is CancellationException) _results.update { emptyList() }
                 }
             }
+        }
+        fun resetField() {
+            _searchState.update { TextFieldValue() }
         }
     }
 }
