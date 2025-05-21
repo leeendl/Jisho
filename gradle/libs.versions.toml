@@ -7,7 +7,7 @@ composeBom = "2025.05.01"
 kotlinxSerializationJson = "1.6.3"
 retrofit = "2.12.0"
 okhttp3 = "4.12.0"
-jsoup = "1.15.3"
+jsoup = "1.20.1"
 retrofitConverter = "1.0.0"
 
 
