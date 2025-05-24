@@ -114,7 +114,7 @@ case "$( uname )" in                #(
   NONSTOP* )        nonstop=true ;;
 esac
 
-CLASSPATH=$APP_HOME/lib/gradle-gradle-cli-main-8.13.jar
+CLASSPATH="\\\"\\\""
 
 
 # Determine the Java command to use to start the JVM.
@@ -202,7 +202,7 @@ fi
 
 
 # Add default JVM options here. You can also use JAVA_OPTS and GRADLE_OPTS to pass JVM options to this script.
-DEFAULT_JVM_OPTS='"-Xmx64m" "-Xms64m"'" \"-javaagent:$APP_HOME/lib/agents/gradle-instrumentation-agent-8.13.jar\""
+DEFAULT_JVM_OPTS='"-Xmx64m" "-Xms64m"'" \"-javaagent:$APP_HOME/lib/agents/gradle-instrumentation-agent-8.14.1.jar\""
 
 # Collect all arguments for the java command:
 #   * DEFAULT_JVM_OPTS, JAVA_OPTS, and optsEnvironmentVar are not allowed to contain shell fragments,
@@ -213,7 +213,7 @@ DEFAULT_JVM_OPTS='"-Xmx64m" "-Xms64m"'" \"-javaagent:$APP_HOME/lib/agents/gradle
 set -- \
         "-Dorg.gradle.appname=$APP_BASE_NAME" \
         -classpath "$CLASSPATH" \
-        org.gradle.launcher.GradleMain \
+        -jar "$APP_HOME/lib/gradle-gradle-cli-main-8.14.1.jar" \
         "$@"
 
 # Stop when "xargs" is not available.

@@ -1,27 +1,27 @@
 [versions]
 agp = "8.10.0"
-kotlin = "2.1.10"
-coreKtx = "1.16.0"
-activityCompose = "1.10.1"
-composeBom = "2025.05.01"
-kotlinxSerializationJson = "1.8.1"
+kotlin = "2.1.21"
+core-ktx = "1.16.0"
+activity-compose = "1.10.1"
+compose-bom = "2025.05.01"
+serialization = "1.8.1"
 retrofit = "2.12.0"
-okhttp3 = "4.12.0"
+okhttp = "4.12.0"
 jsoup = "1.20.1"
-retrofitConverter = "1.0.0"
+retrofit-converter = "1.0.0"
 
 
 [libraries]
-androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
-androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
-androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
+androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "core-ktx" }
+androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activity-compose" }
+androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "compose-bom" }
 androidx-ui = { group = "androidx.compose.ui", name = "ui" }
-androidx-material3 = { group = "androidx.compose.material3", name = "material3" }
-kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
+androidx-material3 = { module = "androidx.compose.material3:material3" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
 retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
-okhttp3 = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp3" }
+okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
 jsoup = { module = "org.jsoup:jsoup", version.ref = "jsoup" }
-retrofit-converter = { group = "com.jakewharton.retrofit", name = "retrofit2-kotlinx-serialization-converter", version.ref = "retrofitConverter" }
+retrofit-converter = { group = "com.jakewharton.retrofit", name = "retrofit2-kotlinx-serialization-converter", version.ref = "retrofit-converter" }
 
 
 [plugins]
