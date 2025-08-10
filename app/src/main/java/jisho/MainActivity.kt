@@ -141,7 +141,7 @@ class MainActivity : ComponentActivity() {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            var japanese = jishoData.japanese.firstOrNull()
+            val japanese = jishoData.japanese.firstOrNull()
             Text(
                 text = japanese?.let { if (it.word != null) it.reading else "" }.orEmpty(),
                 fontFamily = natsumeMoji
