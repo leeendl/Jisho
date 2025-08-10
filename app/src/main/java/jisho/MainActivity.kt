@@ -62,7 +62,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        getActionBar()?.hide()
+        actionBar?.hide()
+
         val searchModel: SearchModel by viewModels()
         setContent {
             val results by searchModel.results.collectAsState(emptyList())
