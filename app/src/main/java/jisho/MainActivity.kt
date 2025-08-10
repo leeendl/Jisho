@@ -74,12 +74,15 @@ class MainActivity : ComponentActivity() {
                 Surface {
                     LazyColumn(
                         Modifier
+                            .padding(12.dp)
                             .fillMaxSize()
                             .systemBarsPadding(),
                         listState
                     ) {
                         item {
-                            SearchBar(searchModel, listState)
+                            Column(Modifier.padding(bottom = 16.dp)) {
+                                SearchBar(searchModel, listState)
+                            }
                         }
                         items(results) {
                             ItemColumn(it)
