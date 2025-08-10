@@ -13,8 +13,8 @@ android {
         minSdk = 21
         targetSdk = 36
 
-        versionCode = 69
-        versionName = "1.0-69"
+        versionCode = 70
+        versionName = "1.0-70"
 
     }
 
@@ -26,16 +26,22 @@ android {
             )
         }
     }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
     }
-    kotlinOptions {
-        jvmTarget = "1.8"
+
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_1_8)
+        }
     }
+
     buildFeatures {
 
     }
+
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
