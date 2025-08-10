@@ -2,7 +2,6 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
     alias(libs.plugins.compose.compiler)
-    kotlin("plugin.serialization") version "2.2.0"
 }
 
 android {
@@ -14,8 +13,8 @@ android {
         minSdk = 21
         targetSdk = 36
 
-        versionCode = 68
-        versionName = "1.0-68"
+        versionCode = 69
+        versionName = "1.0-69"
 
     }
 
@@ -50,9 +49,5 @@ dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)
     implementation(libs.androidx.material3)
-    implementation(libs.kotlinx.serialization.json)
-    implementation(libs.retrofit.converter)
-    implementation(libs.retrofit)
-    implementation(libs.okhttp)
     implementation(libs.jsoup)
 }
