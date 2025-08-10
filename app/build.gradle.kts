@@ -2,7 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
     alias(libs.plugins.compose.compiler)
-    kotlin("plugin.serialization") version "2.1.21"
+    kotlin("plugin.serialization") version "2.2.0"
 }
 
 android {
@@ -14,8 +14,8 @@ android {
         minSdk = 21
         targetSdk = 36
 
-        versionCode = 64
-        versionName = "1.0-64"
+        versionCode = 66
+        versionName = "1.0-66"
 
     }
 
